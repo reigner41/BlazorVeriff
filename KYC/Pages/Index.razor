@@ -1,0 +1,52 @@
+﻿@page "/"
+@using KYC.Services
+@inject IVeriffService veriffService
+@inject IJSRuntime JsRuntime
+
+<h1>Start KYC Verification</h1>
+
+<button @onclick="StartKYCProcess">Begin Verification</button>
+
+<div id="veriff-root"></div>
+@code {
+    private string sessionToken;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (!string.IsNullOrEmpty(sessionToken))
+            {
+                await JsRuntime.InvokeVoidAsync("initializeVeriff", sessionToken, "a53269f9-6b2c-41f2-907f-4f4e2e22e803");
+            }
+        }
+    }
+
+    private async Task StartKYCProcess()
+    {
+        var sessionResponse = await veriffService.GenerateSession();
+        if (sessionResponse != null && !string.IsNullOrEmpty(sessionResponse.Verification.SessionToken))
+        {
+            sessionToken = sessionResponse.Verification.SessionToken;
+            await StartVeriff();
+        }
+        else
+        {
+    // Handle cases where the session token is not obtained
+            Console.WriteLine("Failed to obtain session token");
+        }
+    }
+    
+    private async Task StartVeriff()
+    {
+        if (!string.IsNullOrEmpty(sessionToken))
+        {
+    // Call the JavaScript function to start Veriff
+            await JsRuntime.InvokeVoidAsync("initializeVeriff", sessionToken, "a53269f9-6b2c-41f2-907f-4f4e2e22e803");
+        }
+        else
+        {
+    // Handle cases where the session token is not available
+            Console.WriteLine("Session token is not available");
+        }
+    }
+}
